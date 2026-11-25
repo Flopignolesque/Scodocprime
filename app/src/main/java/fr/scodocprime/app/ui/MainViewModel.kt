@@ -108,6 +108,11 @@ class MainViewModel(private val app: Application) : AndroidViewModel(app) {
     var askSaveCreds by mutableStateOf<Credentials?>(null)
         private set
     private var checkingLogin = false
+    var webLogin by mutableStateOf(false)
+    var loginBusy by mutableStateOf(false)
+        private set
+    var loginError by mutableStateOf<String?>(null)
+        private set
 
     init {
         loadCache()
@@ -279,6 +284,7 @@ class MainViewModel(private val app: Application) : AndroidViewModel(app) {
                 CookieManager.getInstance().flush()
                 ScodocClient(app, prefs.baseUrl).semestres()
                 loginMessage = null
+                webLogin = false
                 screen = Screen.Main
                 stack = emptyList()
                 prefs.authExpiredNotified = false
@@ -294,6 +300,47 @@ class MainViewModel(private val app: Application) : AndroidViewModel(app) {
                 checkingLogin = false
             }
         }
+    }
+
+    /** Connexion depuis l'écran natif : on remplit le formulaire CAS en coulisses. */
+    fun loginWithCredentials(user: String, pass: String) {
+        if (loginBusy) return
+        val c = Credentials(user.trim(), pass)
+        if (c.user.isEmpty() || c.pass.isEmpty()) {
+            loginError = "Remplis l'identifiant et le mot de passe."
+            return
+        }
+        loginBusy = true
+        loginError = null
+        viewModelScope.launch {
+            try {
+                ScodocClient(app, prefs.baseUrl, c).semestres()
+                loginMessage = null
+                webLogin = false
+                screen = Screen.Main
+                stack = emptyList()
+                prefs.authExpiredNotified = false
+                if (creds.load() != c) askSaveCreds = c
+                refresh()
+            } catch (e: BadCredentialsException) {
+                loginError = "Identifiant ou mot de passe incorrect."
+            } catch (e: AuthRequiredException) {
+                loginError = "Le CAS demande une étape en plus. Utilise « Se connecter via le site » ci-dessous."
+            } catch (e: Exception) {
+                loginError = "Pas de connexion au serveur (${e.message ?: "erreur réseau"})."
+            } finally {
+                loginBusy = false
+            }
+        }
+    }
+
+    fun loginWithSaved() {
+        val c = creds.load()
+        if (c == null) {
+            loginError = "Identifiants enregistrés illisibles, retape-les."
+            return
+        }
+        loginWithCredentials(c.user, c.pass)
     }
 
     fun dismissSaveCreds(save: Boolean) {

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
@@ -66,7 +67,7 @@ private const val HAS_PASSWORD_JS = "(function(){return !!document.querySelector
 @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginScreen(vm: MainViewModel) {
+fun WebLoginScreen(vm: MainViewModel) {
     var progress by remember { mutableIntStateOf(0) }
     var webView by remember { mutableStateOf<WebView?>(null) }
     var autoSubmitted by remember { mutableStateOf(false) }
@@ -75,7 +76,7 @@ fun LoginScreen(vm: MainViewModel) {
 
     BackHandler {
         val w = webView
-        if (w != null && w.canGoBack()) w.goBack() else activity?.finish()
+        if (w != null && w.canGoBack()) w.goBack() else vm.webLogin = false
     }
 
     fun fill(submit: Boolean) {
@@ -86,9 +87,14 @@ fun LoginScreen(vm: MainViewModel) {
     Scaffold(
         topBar = {
             TopAppBar(
+                navigationIcon = {
+                    IconButton(onClick = { vm.webLogin = false }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Retour")
+                    }
+                },
                 title = {
                     Column {
-                        Text("Connexion")
+                        Text("Connexion via le site")
                         Text(
                             vm.baseUrl.removePrefix("https://"), style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
