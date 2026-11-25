@@ -1,0 +1,6 @@
+<resources>
+    <color name="launcher_bg">#3355CC</color>
+    <style name="Theme.ScodocPrime" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@android:color/white</item>
+    </style>
+</resources>
